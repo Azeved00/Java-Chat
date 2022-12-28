@@ -5,6 +5,37 @@ import java.nio.channels.*;
 import java.nio.charset.*;
 import java.util.*;
 
+class User {
+    private String nick;
+    private String room;
+    // state: 0 - init ; 1 - outside; 2 - inside
+    private int state;
+    private String buffer;
+
+    User(){
+        nick = "";
+        room = "";
+        state = 0;
+        buffer = "";
+    }
+
+    public String getNick(){return this.nick;}
+    public void setNick(String n){this.nick = n;}
+    
+    public String getRoom(){return this.room;}
+    public void setRoom(String n){
+        this.state = 2;
+        this.room = n;
+        if(room == "") this.state = 1;
+    }
+    
+    public int getState(){return this.state;}
+    
+    public String getBuffer(){return this.buffer;}
+    public void setBuffer(String n){this.buffer = n;}    
+}
+
+
 public class ChatServer {
     // A pre-allocated buffer for the received data
     static private final ByteBuffer buffer = ByteBuffer.allocate( 16384 );
