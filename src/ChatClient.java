@@ -9,7 +9,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 
-public class ChatClient {
+public class ChatClient extends Thread {
 
     // enviroment thing - disable this to not see any debug screens
     private static final boolean Debug = true;
@@ -27,8 +27,7 @@ public class ChatClient {
     private final ByteBuffer inBuffer = ByteBuffer.allocate(bufferSize);
     private SocketChannel Socket = null;
 
-    // Método a usar para acrescentar uma string à caixa de texto
-    // * NÃO MODIFICAR *
+    // Add Message to Chat Area
     public void printMessage(final String message) {
         chatArea.append(message);
     }
@@ -36,7 +35,7 @@ public class ChatClient {
 
     // Construtor
     public ChatClient(String server, int port) throws IOException {
-        // Inicialização da interface gráfica --- * NÃO MODIFICAR *
+        // Graphical Interface
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
@@ -64,17 +63,13 @@ public class ChatClient {
                 chatBox.requestFocusInWindow();
             }
         });
-        // --- Fim da inicialização da interface gráfica
 
-        // Se for necessário adicionar código de inicialização ao
-        // construtor, deve ser colocado aqui
-        
+        //Create Socket        
         Socket = SocketChannel.open(new InetSocketAddress(server, port));
     }
 
-
-    // Método invocado sempre que o utilizador insere uma mensagem
-    // na daixa de entrada
+    // Method called each time user clicks enter
+    // Send message to server using socket
     public void newMessage(String message) throws IOException {
         if(Debug) System.out.println(message);
 
@@ -92,17 +87,19 @@ public class ChatClient {
     }
 
 
-    // Método principal do objecto
-    public void run() throws IOException {
-        // PREENCHER AQUI
+    // Called by start method (from Thread)
+    // Handles responses from server
+    public void run() {
+        if(Debug) System.out.println("New thread created - Checking for responses from server");
+        while(true){
+        }
     }
 
-
-    // Instancia o ChatClient e arranca-o invocando o seu método run()
-    // * NÃO MODIFICAR *
+    
+    // Create the ChatClient Object
+    // initiate new thread and call run method
     public static void main(String[] args) throws IOException {
         ChatClient client = new ChatClient(args[0], Integer.parseInt(args[1]));
-        client.run();
+        client.start();
     }
-
 }
