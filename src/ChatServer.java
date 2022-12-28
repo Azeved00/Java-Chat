@@ -15,6 +15,8 @@ public class ChatServer {
 
     static public void main( String args[] ) throws Exception {
         // Parse port from command line
+        if(args.length <= 0) throw new Exception("Need first argument, the port number!");
+
         int port = Integer.parseInt( args[0] );
 
         try {
