@@ -6,17 +6,37 @@ import java.nio.charset.*;
 import java.util.*;
 
 class User {
+    //static methods and attributes
+    static private Map<SocketChannel,User> users = new HashMap<>();
+    static private Map<String,User[]> rooms = new HashMap<>();
+    public static User getUser(SocketChannel s){
+        return users.get(s);
+    }
+    public static boolean putUser(SocketChannel s,User u){
+        // if the key s is already mapped to a certain user
+        // doing put will replace the user in the map with u
+        users.put(s,u);
+        return true;
+    }
+    
+
+    //object methods and attributes
     private String nick;
     private String room;
     // state: 0 - init ; 1 - outside; 2 - inside
     private int state;
     private String buffer;
+    private SocketChannel socket;
 
-    User(){
+    User(SocketChannel s){
         nick = "";
         room = "";
         state = 0;
         buffer = "";
+        socket = s;
+
+        //add new user directly to the map
+        users.put(s,this);
     }
 
     public String getNick(){return this.nick;}
@@ -33,6 +53,8 @@ class User {
 
     public String getBuffer(){return this.buffer;}
     public void setBuffer(String n){this.buffer = n;}
+
+    public SocketChannel getSocket() {return this.socket;}
 }
 
 
@@ -45,7 +67,6 @@ public class ChatServer {
     static private final CharsetDecoder decoder = charset.newDecoder();
     static private final CharsetEncoder encoder = charset.newEncoder();
 
-    static private Map<SocketChannel,User> user = new HashMap<>();
 
     static private List<String> names = new ArrayList<>();
 
@@ -106,6 +127,9 @@ public class ChatServer {
                         SocketChannel sc = s.getChannel();
                         sc.configureBlocking( false );
 
+                        User u = User.getUser(sc);
+                        if(u == null) u = new User(sc);
+                        
                         // Register it with the selector, for reading
                         sc.register( selector, SelectionKey.OP_READ );
                     }
@@ -115,7 +139,7 @@ public class ChatServer {
                         try {
                             // It's incoming data on a connection -- process it
                             sc = (SocketChannel)key.channel();
-                            boolean ok = processInput( sc );
+                            boolean ok = processInput(sc);
 
                             // If the connection is dead, remove it from the selector
                             // and close it
@@ -158,7 +182,7 @@ public class ChatServer {
     }
 
     // Just read the message from the socket and send it to stdout
-    static private boolean processInput( SocketChannel sc ) throws IOException {
+    static private boolean processInput( SocketChannel sc ) throws Exception {
         // Read the message to the buffer
         buffer.clear();
         sc.read( buffer );
@@ -173,45 +197,42 @@ public class ChatServer {
         String message = decoder.decode(buffer).toString();
         String[] splited = message.split(" ");
 
-        if(processCommand(sc,splited)) return true;
-        if(processMessage(sc,splited)) return true;
+        User u = User.getUser(sc);
+        if(u == null) throw new Exception ("User not found");
+
+        if(processCommand(u,splited)) return true;
+        if(processMessage(u,splited)) return true;
 
         System.out.print( message );
 
         return false;
     }
 
-    static private boolean processMessage (SocketChannel socket, String[] message){
+    static private boolean processMessage (User u, String[] message){
         if(message[0].charAt(0) == '/') return false;
 
         //process message
 
         return true;
     }
-    static private boolean processCommand (SocketChannel socket, String[] message) throws IOException{
+
+    static private boolean processCommand (User u, String[] message) throws IOException{
         if(message[0].charAt(0) != '/') return false;
 
-        //process comands
-
-        User u = user.get(socket);
-        if(u == null) user.put(socket,new User());
-
+        
         switch(message[0]) {
             case "/nick":
-
                 if(message.length != 2) {
-                    sendMessageUser(socket, "ERROR");
+                    sendMessageUser(u, "ERROR");
                     return false;
                 }
-
-                u = user.get(socket);
 
                 String old = u.getNick();
 
                 int index = -1;
                 for(int i = 0; i < names.size(); i++) {
                     if(message[1].equals(names.get(i))) {
-                        sendMessageUser(socket, "ERROR");
+                        sendMessageUser(u, "ERROR");
                         return false;
                     }
                     if(u.getNick().equals(names.get(i))) index = i;
@@ -221,21 +242,14 @@ public class ChatServer {
 
                 names.add(message[1]);
                 u.setNick(message[1]);
-                user.remove(socket);
-                user.put(socket,u);
+                User.putUser(u.getSocket(),u);
 
                  switch(u.getState()) {
-                     case 0:
-                        sendMessageUser(socket, "OK");
-                        break;
-
-                     case 1:
-                         sendMessageUser(socket, "OK");
-                         break;
-
                      case 2:
-                         sendMessageUser(socket, "OK");
-                         sendMessageRoom(socket, "NEWNICK" + old + u.getNick(), u.getRoom());
+                         sendMessageRoom(u, "NEWNICK" + old + u.getNick());
+                     case 0:
+                     case 1:
+                         sendMessageUser(u, "OK");
                          break;
                  }
                 break;
@@ -243,7 +257,7 @@ public class ChatServer {
             case "/join":
 
                 if(message.length != 2) {
-                    sendMessageUser(socket, "ERROR");
+                    sendMessageUser(u, "ERROR");
                     return false;
                 }
 
@@ -252,24 +266,18 @@ public class ChatServer {
             case "/leave":
 
                 if(message.length != 1) {
-                    sendMessageUser(socket, "ERROR");
+                    sendMessageUser(u, "ERROR");
                     return false;
                 }
 
                 switch(u.getState()) {
                     case 0:
-                        sendMessageUser(socket, "ERROR");
-                        return false;
-                        break;
-
                     case 1:
-                        sendMessageUser(socket, "ERROR");
+                        sendMessageUser(u, "ERROR");
                         return false;
-                        break;
-
                     case 2:
-                        sendMessageUser(socket, "OK");
-                        sendMessageRoom(socket, "LEFT" + u.getNick());
+                        sendMessageUser(u, "OK");
+                        sendMessageRoom(u, "LEFT" + u.getNick());
                         break;
                 }
 
@@ -278,23 +286,18 @@ public class ChatServer {
             case "/bye":
 
                 if(message.length != 1) {
-                    sendMessageUser(socket, "ERROR");
+                    sendMessageUser(u, "ERROR");
                     return false;
                 }
 
                 switch(u.getState()) {
                     case 0:
-                        sendMessageUser(socket, "OK");
-                        return false;
-                        break;
-
                     case 1:
-                        sendMessageUser(socket, "OK");
+                        sendMessageUser(u, "OK");
                         return false;
-                        break;
 
                     case 2:
-                        sendMessageUser(socket, "ERROR");
+                        sendMessageUser(u, "ERROR");
                         break;
                 }
 
@@ -304,12 +307,12 @@ public class ChatServer {
         return true;
     }
 
-    static private boolean sendMessageUser (SocketChannel socket, String message) throws IOException{
-        socket.write(encoder.encode(CharBuffer.wrap(message + '\n')));
+    static private boolean sendMessageUser (User u, String message) throws IOException{
+        u.getSocket().write(encoder.encode(CharBuffer.wrap(message + '\n')));
         return true;
     }
 
-    static private boolean sendMessageRoom (SocketChannel socket, String message, String room) {
+    static private boolean sendMessageRoom (User u, String message) {
         return true;
     }
 }
