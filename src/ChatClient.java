@@ -11,30 +11,34 @@ import java.nio.charset.CharsetDecoder;
 
 public class ChatClient extends Thread {
 
-    // enviroment thing - disable this to not see any debug screens
+    // Vars for enviroment 
     private static final boolean Debug = true;
 
-    // Variáveis relacionadas com a interface gráfica --- * NÃO MODIFICAR *
+    // Vars for gui 
     JFrame frame = new JFrame("Chat Client");
     private JTextField chatBox = new JTextField();
     private JTextArea chatArea = new JTextArea();
-    // --- Fim das variáveis relacionadas coma interface gráfica
 
-    // Se for necessário adicionar variáveis ao objecto ChatClient, devem
-    // ser colocadas aqui
+    // Buffer and socket vars
     private static final int bufferSize = 16384;
     private final ByteBuffer outBuffer = ByteBuffer.allocate(bufferSize);
     private final ByteBuffer inBuffer = ByteBuffer.allocate(bufferSize);
     private SocketChannel Socket = null;
+    
+    // Decoder
+    static private final Charset charset = Charset.forName("UTF8");
+    static private final CharsetDecoder decoder = charset.newDecoder();
 
     // Add Message to Chat Area
     public void printMessage(final String message) {
         chatArea.append(message);
     }
 
-
     // Construtor
     public ChatClient(String server, int port) throws IOException {
+        //Create Socket        
+        super("Receiver");
+        
         // Graphical Interface
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel panel = new JPanel();
@@ -64,7 +68,7 @@ public class ChatClient extends Thread {
             }
         });
 
-        //Create Socket        
+        //give name to thread
         Socket = SocketChannel.open(new InetSocketAddress(server, port));
     }
 
@@ -90,8 +94,20 @@ public class ChatClient extends Thread {
     // Called by start method (from Thread)
     // Handles responses from server
     public void run() {
-        if(Debug) System.out.println("New thread created - Checking for responses from server");
+        if(Debug) System.out.println("Thread " + this.getName() + " - Checking for responses from server");
+        
         while(true){
+            try{
+                inBuffer.clear();
+                Socket.read(inBuffer);
+                inBuffer.flip();
+                
+                String message = decoder.decode(inBuffer).toString(); 
+                printMessage(message);
+            }
+            catch(Exception e){
+                if(Debug) System.out.println(e.getMessage());
+            }
         }
     }
 
