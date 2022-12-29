@@ -19,20 +19,20 @@ class User {
         buffer = "";
     }
 
-    public String getNick(){return this.nick;}
-    public void setNick(String n){this.nick = n;}
+    public String getNick() { return this.nick; }
+    public void setNick(String n) { this.nick = n; }
     
-    public String getRoom(){return this.room;}
-    public void setRoom(String n){
+    public String getRoom() { return this.room; }
+    public void setRoom(String n) {
         this.state = 2;
         this.room = n;
         if(room == "") this.state = 1;
     }
     
-    public int getState(){return this.state;}
+    public int getState() { return this.state; }
     
-    public String getBuffer(){return this.buffer;}
-    public void setBuffer(String n){this.buffer = n;}    
+    public String getBuffer() { return this.buffer; }
+    public void setBuffer(String n) { this.buffer = n; }
 }
 
 
@@ -171,5 +171,6 @@ public class ChatServer {
 
         return true;
     }
+    
 }
 
