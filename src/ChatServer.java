@@ -43,6 +43,11 @@ public class ChatServer {
     // Decoder for incoming text -- assume UTF-8
     static private final Charset charset = Charset.forName("UTF8");
     static private final CharsetDecoder decoder = charset.newDecoder();
+    static private final CharsetEncoder encoder = charset.newEncoder();
+
+    static private Map<SocketChannel,User> user = new HashMap<>();
+
+    static private List<String> names = new ArrayList<>();
 
     static public void main( String args[] ) throws Exception {
         // Parse port from command line
@@ -166,7 +171,7 @@ public class ChatServer {
 
         // Decode and print the message to stdout
         String message = decoder.decode(buffer).toString();
-        String[] splited = message.split("");
+        String[] splited = message.split(" ");
 
         if(processCommand(sc,splited)) return true;
         if(processMessage(sc,splited)) return true;
@@ -183,19 +188,128 @@ public class ChatServer {
 
         return true;
     }
-    static private boolean processCommand (SocketChannel socket, String[] message){
+    static private boolean processCommand (SocketChannel socket, String[] message) throws IOException{
         if(message[0].charAt(0) != '/') return false;
 
         //process comands
 
+        User u = user.get(socket);
+        if(u == null) user.put(socket,new User());
+
+        switch(message[0]) {
+            case "/nick":
+
+                if(message.length != 2) {
+                    sendMessageUser(socket, "ERROR");
+                    return false;
+                }
+
+                u = user.get(socket);
+
+                String old = u.getNick();
+
+                int index = -1;
+                for(int i = 0; i < names.size(); i++) {
+                    if(message[1].equals(names.get(i))) {
+                        sendMessageUser(socket, "ERROR");
+                        return false;
+                    }
+                    if(u.getNick().equals(names.get(i))) index = i;
+                }
+
+                if(index != -1) names.remove(index);
+
+                names.add(message[1]);
+                u.setNick(message[1]);
+                user.remove(socket);
+                user.put(socket,u);
+
+                 switch(u.getState()) {
+                     case 0:
+                        sendMessageUser(socket, "OK");
+                        break;
+
+                     case 1:
+                         sendMessageUser(socket, "OK");
+                         break;
+
+                     case 2:
+                         sendMessageUser(socket, "OK");
+                         sendMessageRoom(socket, "NEWNICK" + old + u.getNick(), u.getRoom());
+                         break;
+                 }
+                break;
+
+            case "/join":
+
+                if(message.length != 2) {
+                    sendMessageUser(socket, "ERROR");
+                    return false;
+                }
+
+                break;
+
+            case "/leave":
+
+                if(message.length != 1) {
+                    sendMessageUser(socket, "ERROR");
+                    return false;
+                }
+
+                switch(u.getState()) {
+                    case 0:
+                        sendMessageUser(socket, "ERROR");
+                        return false;
+                        break;
+
+                    case 1:
+                        sendMessageUser(socket, "ERROR");
+                        return false;
+                        break;
+
+                    case 2:
+                        sendMessageUser(socket, "OK");
+                        sendMessageRoom(socket, "LEFT" + u.getNick());
+                        break;
+                }
+
+                break;
+
+            case "/bye":
+
+                if(message.length != 1) {
+                    sendMessageUser(socket, "ERROR");
+                    return false;
+                }
+
+                switch(u.getState()) {
+                    case 0:
+                        sendMessageUser(socket, "OK");
+                        return false;
+                        break;
+
+                    case 1:
+                        sendMessageUser(socket, "OK");
+                        return false;
+                        break;
+
+                    case 2:
+                        sendMessageUser(socket, "ERROR");
+                        break;
+                }
+
+                break;
+        }
+
         return true;
     }
 
-    static private boolean sendMessageUser (SocketChannel socket,String room,String message){
+    static private boolean sendMessageUser (SocketChannel socket, String message) throws IOException{
+        socket.write(encoder.encode(CharBuffer.wrap(message + '\n')));
         return true;
     }
 
-    static private boolean sendMessageRoom (SocketChannel socket,String message){
+    static private boolean sendMessageRoom (SocketChannel socket, String message, String room) {
         return true;
     }
 }
