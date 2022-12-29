@@ -168,26 +168,34 @@ public class ChatServer {
         String message = decoder.decode(buffer).toString();
         String[] splited = message.split("");
 
-        if(processCommand(splited)) return true;
-        if(processMessage(splited)) return true;
+        if(processCommand(sc,splited)) return true;
+        if(processMessage(sc,splited)) return true;
 
         System.out.print( message );
 
         return false;
     }
 
-    static private boolean processMessage (String[] message){
+    static private boolean processMessage (SocketChannel socket, String[] message){
         if(message[0].charAt(0) == '/') return false;
 
         //process message
 
         return true;
     }
-    static private boolean processCommand (String[] message){
+    static private boolean processCommand (SocketChannel socket, String[] message){
         if(message[0].charAt(0) != '/') return false;
 
         //process comands
 
+        return true;
+    }
+
+    static private boolean sendMessageUser (SocketChannel socket,String room,String message){
+        return true;
+    }
+
+    static private boolean sendMessageRoom (SocketChannel socket,String message){
         return true;
     }
 }
