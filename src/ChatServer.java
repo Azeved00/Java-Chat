@@ -91,7 +91,6 @@ public class ChatServer {
 
                     // What kind of activity is it?
                     if (key.isAcceptable()) {
-
                         // It's an incoming connection.  Register this socket with
                         // the Selector so we can listen for input on it
                         Socket s = ss.accept();
@@ -104,13 +103,11 @@ public class ChatServer {
 
                         // Register it with the selector, for reading
                         sc.register( selector, SelectionKey.OP_READ );
-
-                    } else if (key.isReadable()) {
-
+                    } 
+                    else if (key.isReadable()) {
                         SocketChannel sc = null;
 
                         try {
-
                             // It's incoming data on a connection -- process it
                             sc = (SocketChannel)key.channel();
                             boolean ok = processInput( sc );
@@ -129,15 +126,17 @@ public class ChatServer {
                                     System.err.println( "Error closing socket "+s+": "+ie );
                                 }
                             }
-
-                        } catch( IOException ie ) {
-
+                        } 
+                        catch( IOException ie ) {
                             // On exception, remove this channel from the selector
                             key.cancel();
 
                             try {
                                 sc.close();
-                            } catch( IOException ie2 ) { System.out.println( ie2 ); }
+                            } 
+                            catch( IOException ie2 ) { 
+                                System.out.println( ie2 ); 
+                            }
 
                             System.out.println( "Closed "+sc );
                         }
@@ -147,11 +146,11 @@ public class ChatServer {
                 // We remove the selected keys, because we've dealt with them.
                 keys.clear();
             }
-        } catch( IOException ie ) {
+        } 
+        catch( IOException ie ) {
             System.err.println( ie );
         }
     }
-
 
     // Just read the message from the socket and send it to stdout
     static private boolean processInput( SocketChannel sc ) throws IOException {
@@ -167,9 +166,29 @@ public class ChatServer {
 
         // Decode and print the message to stdout
         String message = decoder.decode(buffer).toString();
+        String[] splited = message.split("");
+        
+        processCommand(splited);
+        processMessage(splited);
+        
         System.out.print( message );
 
         return true;
     }
+
+    static private boolean processMessage (String[] message){
+        if(message[0].charAt(0) == '/') return false;
+        
+        //process message
+
+        return true;
+    }
+    static private boolean processCommand (String[] message){
+        if(message[0].charAt(0) != '/') return false;
+        
+        //process comands
+
+        return true;
+    } 
 }
 
