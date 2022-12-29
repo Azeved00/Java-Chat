@@ -168,12 +168,12 @@ public class ChatServer {
         String message = decoder.decode(buffer).toString();
         String[] splited = message.split("");
 
-        processCommand(splited);
-        processMessage(splited);
+        if(processCommand(splited)) return true;
+        if(processMessage(splited)) return true;
 
         System.out.print( message );
 
-        return true;
+        return false;
     }
 
     static private boolean processMessage (String[] message){
