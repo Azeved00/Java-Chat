@@ -294,8 +294,10 @@ public class ChatServer {
     static private boolean processMessage (User u, String[] message) throws IOException{
         if(message[0].charAt(0) == '/') return false;
 
+		String msg = String.join(" ", message);
+		System.out.println("New message from " + u.getNick() +" to " + u.getRoom()+ " -> " + msg);
         //process message
-        u.sendMessageRoom("MESSAGE " + String.join(" ", message) + '\n');
+        u.sendMessageRoom("MESSAGE " + u.getNick() +" " + msg);
 
         return true;
     }
