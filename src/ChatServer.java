@@ -309,7 +309,12 @@ public class ChatServer {
                     u.sendMessageUser("ERROR");
                     return false;
                 }
-				u.setRoom(message[1]);
+				
+				if(u.setRoom(message[1])) 
+					u.sendMessageUser("OK");
+				else 
+					u.sendMessageUser("ERROR");
+				
                 break;
 
             case "/leave":
