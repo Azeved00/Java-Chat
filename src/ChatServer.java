@@ -56,14 +56,12 @@ class User {
 		
 		//remove from old room if he is already in a room
         if(this.state == 2){
-			int index2 = 0;
-			for(User i: helper) {
-				if(i == this) {
-					helper.remove(index2);
+			for(int i = 0; i < helper.size(); i++) {
+				if(helper.get(i).equals(this)) {
+					helper.remove(i);
 					rooms.remove(this.room);
 					rooms.put(this.room,helper);
 				}
-				index2++;
 			}
 			this.sendMessageRoom("LEFT" + this.nick);
 		}
@@ -318,7 +316,6 @@ public class ChatServer {
                 break;
 
             case "/leave":
-
                 if(message.length != 1) {
                     u.sendMessageUser("ERROR");
                     return false;
@@ -330,7 +327,6 @@ public class ChatServer {
 					u.sendMessageUser("ERROR");
 
                 break;
-
             case "/bye":
 
                 if(message.length != 1) {
@@ -342,7 +338,7 @@ public class ChatServer {
                     case 0:
                     case 1:
                         u.sendMessageUser("OK");
-                        return false;
+                        return true;
 
                     case 2:
                         u.sendMessageUser("ERROR");
@@ -357,7 +353,5 @@ public class ChatServer {
 
         return true;
     }
-
-
 }
 
