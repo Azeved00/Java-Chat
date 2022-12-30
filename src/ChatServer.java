@@ -320,7 +320,6 @@ public class ChatServer {
                     //return false;
                 }
 
-
 				System.out.println("leaving");
                 if(u.setRoom("")) 
 					u.sendMessageUser("OK");
@@ -328,6 +327,7 @@ public class ChatServer {
 					u.sendMessageUser("ERROR");
 
                 break;
+
             case "/bye":
 
                 if(message.length != 1) {
