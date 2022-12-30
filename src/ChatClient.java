@@ -59,7 +59,7 @@ public class ChatClient extends Thread {
 				toPrint = "Comando Corrido com sucesso";
 				break;
 			default:
-				toPrint = "";
+				toPrint = message;
 		}
         chatArea.append(toPrint);
     }
