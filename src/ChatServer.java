@@ -63,7 +63,7 @@ class User {
                     break;
 				}
 			}
-			this.sendMessageRoom("LEFT" + this.nick);
+			this.sendMessageRoom("LEFT " + this.nick);
 		}
 
 		//update user statistics
@@ -78,13 +78,13 @@ class User {
         helper = rooms.get(this.room);
         if(helper == null) {
             helper = new ArrayList<>();
-            helper.add(this);
         } else {
-            helper.remove(newRoom);
+            rooms.remove(newRoom);
         }
+		helper.add(this);
         rooms.put(newRoom,helper);
 		
-        this.sendMessageRoom("JOINED" + this.nick);
+        this.sendMessageRoom("JOINED " + this.nick);
 		return true;
     }
 
@@ -105,6 +105,16 @@ class User {
     }
 
     public boolean sendMessageRoom (String message) {
+		try{
+			List<User> roomUsers = rooms.get(this.room);
+			for(User i: roomUsers) {
+				i.sendMessageUser(message);
+			}
+		}
+		catch(Exception e){
+			return false;
+		}
+		
         return true;
     }
 
@@ -196,6 +206,8 @@ public class ChatServer {
                                 key.cancel();
 
                                 Socket s = null;
+
+								
                                 try {
                                     s = sc.socket();
                                     System.out.println( "Closing connection to "+s );
@@ -236,9 +248,21 @@ public class ChatServer {
         buffer.clear();
         sc.read( buffer );
         buffer.flip();
-
+        User u = User.getUser(sc);
+        if(u == null) throw new Exception ("User not found");
+		
         // If no data, close the connection
         if (buffer.limit()==0) {
+			//removing name of user that was closed
+			// take him from room and user maps
+			u.delete();
+			u.setRoom("");
+			int index = -1;
+			for(int i = 0; i < names.size(); i++) {
+				if(u.getNick().equals(names.get(i))) 
+					index = i;
+			}
+			if(index != -1) names.remove(index);
             return false;
         }
 
@@ -248,15 +272,22 @@ public class ChatServer {
 		message = message.strip();
         String[] splited = message.split(" ");
 
-
-
-        User u = User.getUser(sc);
-        if(u == null) throw new Exception ("User not found");
-
+		if(splited[0] == "") return true;
         if(processCommand(u,splited)) return true;
         if(processMessage(u,splited)) return true;
 
+								
+		//removing name of user that was closed
+		// take him from room and user maps
 		u.delete();
+		u.setRoom("");
+		int index = -1;
+		for(int i = 0; i < names.size(); i++) {
+			if(u.getNick().equals(names.get(i))) 
+				index = i;
+		}
+		if(index != -1) names.remove(index);
+
         return false;
     }
 
@@ -270,9 +301,9 @@ public class ChatServer {
     }
 
     static private boolean processCommand (User u, String[] message) throws IOException{
-        if((message[0].charAt(0) != '/')) u.sendMessageUser("ERROR");
-
-		System.out.println("Nick - " + u.getNick() + " Group: " + u.getRoom() + " State:  " + u.getState()+ " ran command: " + message[0]);
+        if((message[0].charAt(0) != '/')) return false;
+		
+		System.out.println("Nick: " + u.getNick() + " Group: " + u.getRoom() + " State:  " + u.getState()+ " ran command: " + message[0]);
         switch(message[0]) {
             case "/nick":
                 //System.out.println("<" + message[1] + ">");
@@ -284,14 +315,16 @@ public class ChatServer {
                 String old = u.getNick();
 
                 int index = -1;
+				boolean br = true;
                 for(int i = 0; i < names.size(); i++) {
+					if(u.getNick().equals(names.get(i))) index = i;
                     if(message[1].equals(names.get(i))) {
                         u.sendMessageUser("ERROR");
-                        //return false;
+                        br = false;
+						break;
                     }
-                    if(u.getNick().equals(names.get(i))) index = i;
                 }
-
+				if(!br) break;
                 if(index != -1) names.remove(index);
 
                 if(u.getState() == 0) u.setState(1);
@@ -301,7 +334,7 @@ public class ChatServer {
 
                  switch(u.getState()) {
                      case 2:
-                         u.sendMessageRoom("NEWNICK" + old + u.getNick());
+                         u.sendMessageRoom("NEWNICK " + old + " " + u.getNick());
                      case 0:
                      case 1:
                          u.sendMessageUser("OK");
@@ -343,7 +376,8 @@ public class ChatServer {
                     u.sendMessageUser("ERROR");
                     return false;
                 }
-
+				
+				
                 switch(u.getState()) {
                     case 2:
 						u.setRoom("");
@@ -361,7 +395,7 @@ public class ChatServer {
                 break;
 
             default:
-				System.out.println("unknown command");
+				System.out.println("Unknown Command");
                 u.sendMessageUser("ERROR");
         }
 
