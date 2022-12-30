@@ -69,7 +69,6 @@ class User {
         this.state = 2;
         this.room = newRoom;
         if(this.room == ""){ 
-			System.out.println("left");
 			this.state = 1;
 			return true;
 		}
@@ -239,7 +238,11 @@ public class ChatServer {
 
         // Decode and print the message to stdout
         String message = User.decoder.decode(buffer).toString();
+		message= message.substring(0,message.length()-1);
+		message = message.strip();
         String[] splited = message.split(" ");
+
+
 
         User u = User.getUser(sc);
         if(u == null) throw new Exception ("User not found");
@@ -263,6 +266,7 @@ public class ChatServer {
     static private boolean processCommand (User u, String[] message) throws IOException{
         if((message[0].charAt(0) != '/')) u.sendMessageUser("ERROR");
 
+		System.out.println("Nick - " + u.getNick() + " Group: " + u.getRoom() + " State:  " + u.getState()+ " ran command: " + message[0]);
         switch(message[0]) {
             case "/nick":
                 //System.out.println("<" + message[1] + ">");
@@ -320,7 +324,6 @@ public class ChatServer {
                     //return false;
                 }
 
-				System.out.println("leaving");
                 if(u.setRoom("")) 
 					u.sendMessageUser("OK");
 				else 
@@ -354,6 +357,7 @@ public class ChatServer {
                 break;
 
             default:
+				System.out.println("unknown command");
                 u.sendMessageUser("ERROR");
         }
 
