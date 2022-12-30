@@ -8,7 +8,6 @@ import java.util.*;
 class User {
     //static methods and attributes
     static private Map<SocketChannel,User> users = new HashMap<>();
-    static private Map<String,User[]> rooms = new HashMap<>();
     public static User getUser(SocketChannel s){
         return users.get(s);
     }
@@ -53,6 +52,7 @@ class User {
 
     public String getBuffer(){return this.buffer;}
     public void setBuffer(String n){this.buffer = n;}
+    public void setState(int n){this.state = n;}
 
     public SocketChannel getSocket() {return this.socket;}
 }
@@ -66,9 +66,8 @@ public class ChatServer {
     static private final Charset charset = Charset.forName("UTF8");
     static private final CharsetDecoder decoder = charset.newDecoder();
     static private final CharsetEncoder encoder = charset.newEncoder();
-
-
     static private List<String> names = new ArrayList<>();
+    static private Map<String,List<User>> rooms = new HashMap<>();
 
     static public void main( String args[] ) throws Exception {
         // Parse port from command line
@@ -219,7 +218,6 @@ public class ChatServer {
     static private boolean processCommand (User u, String[] message) throws IOException{
         if(message[0].charAt(0) != '/') return false;
 
-        
         switch(message[0]) {
             case "/nick":
                 if(message.length != 2) {
@@ -240,6 +238,7 @@ public class ChatServer {
 
                 if(index != -1) names.remove(index);
 
+                if(u.getState() == 0) u.setState(1);
                 names.add(message[1]);
                 u.setNick(message[1]);
                 User.putUser(u.getSocket(),u);
@@ -259,6 +258,57 @@ public class ChatServer {
                 if(message.length != 2) {
                     sendMessageUser(u, "ERROR");
                     return false;
+                }
+
+                switch(u.getState()) {
+                    case 2:
+                        sendMessageUser(u, "OK");
+                        sendMessageRoom(u, "LEFT" + u.getNick());
+
+                        List<User> helper = rooms.get(u.getRoom());
+                        int index2 = 0;
+                        for(User i: helper) {
+                            if(i == u) {
+                                helper.remove(index2);
+                                rooms.remove(u.getRoom());
+                                rooms.put(u.getRoom(),helper);
+                            }
+                            index2++;
+                        }
+
+                        u.setRoom(message[1]);
+                        helper = rooms.get(u.getRoom());
+                        if(helper == null) {
+                            helper = new ArrayList<>();
+                            helper.add(u);
+                        } else {
+                            rooms.remove(message[1]);
+                        }
+
+                        rooms.put(message[1],helper);
+
+                        sendMessageRoom(u, "JOINED" + u.getNick());
+                        break;
+
+                    case 0:
+                        sendMessageUser(u,"ERROR");
+                        break;
+
+                    case 1:
+                        u.setRoom(message[1]);
+                        helper = rooms.get(u.getRoom());
+                        if(helper == null) {
+                            helper = new ArrayList<>();
+                            helper.add(u);
+                        } else {
+                            rooms.remove(message[1]);
+                        }
+
+                        rooms.put(message[1],helper);
+
+                        sendMessageRoom(u, "JOINED" + u.getNick());
+                        sendMessageUser(u, "OK");
+                        break;
                 }
 
                 break;
@@ -301,6 +351,9 @@ public class ChatServer {
                         break;
                 }
 
+                break;
+
+            case "/priv":
                 break;
         }
 
