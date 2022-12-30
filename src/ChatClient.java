@@ -31,7 +31,37 @@ public class ChatClient extends Thread {
 
     // Add Message to Chat Area
     public void printMessage(final String message) {
-        chatArea.append(message);
+		String splited =  message.split(" ",3);
+		String toPrint;
+		switch(splited[0]){
+			case "MESSAGE":
+				toPrint = splited[1] + ": " +splited[2];
+				break;
+			case "JOINED":
+				toPrint = splited[1] + " juntou-se ao grupo"; 
+				break;
+			case "ERROR":
+				toPrint = "Houve um erro no comando";
+				break;
+			case "NEWNICk":
+				toPrint = splited[1] + " mudou de nick para " + splited[2];
+				break;
+			case "PRIVATE":
+				toPrint = "Mensagem Privade de " + splited[1] + ": " +splited[2];
+				break;
+			case "LEFT":
+				toPrint = splited[1] + " saiu do chat";
+				break;
+			case "BYE":
+				toPrint = "Até à proxima :)";
+				break;
+			case "OK":
+				toPrint = "Comando Corrido com sucesso";
+				break;
+			default:
+				toPrint = "";
+		}
+        chatArea.append(toPrint);
     }
 
     // Construtor
