@@ -12,6 +12,7 @@ class User {
     static public final CharsetDecoder decoder = charset.newDecoder(); // public so that ChatServer Can freely decode
     static private final CharsetEncoder encoder = charset.newEncoder();
     static private Map<SocketChannel,User> users = new HashMap<>();
+	
     public static User getUser(SocketChannel s){
         return users.get(s);
     }
@@ -92,6 +93,11 @@ class User {
     public void setBuffer(String n){this.buffer = n;}
     public void setState(int n){this.state = n;}
     public SocketChannel getSocket() {return this.socket;}
+	
+	public void delete(){
+		users.remove(this.socket);
+		System.gc();
+	}	
 	
 	public boolean sendMessageUser (String message) throws IOException{
         this.socket.write(encoder.encode(CharBuffer.wrap(message + '\n')));
@@ -250,8 +256,7 @@ public class ChatServer {
         if(processCommand(u,splited)) return true;
         if(processMessage(u,splited)) return true;
 
-        System.out.print( message );
-
+		u.delete();
         return false;
     }
 
@@ -340,15 +345,13 @@ public class ChatServer {
                 }
 
                 switch(u.getState()) {
+                    case 2:
+						u.setRoom("");
+                        u.sendMessageRoom("LEFT " + u.getNick());
                     case 0:
                     case 1:
                         u.sendMessageUser("BYE");
                         return false;
-
-                    case 2:
-                        u.sendMessageUser("BYE");
-                        u.sendMessageRoom("LEFT " + u.getNick());
-                        break;
                 }
 
                 break;
