@@ -324,16 +324,10 @@ public class ChatServer {
                     return false;
                 }
 
-                switch(u.getState()) {
-                    case 0:
-                    case 1:
-                        u.sendMessageUser("ERROR");
-                        return false;
-                    case 2:
-                        u.sendMessageUser("OK");
-                        u.sendMessageRoom("LEFT" + u.getNick());
-                        break;
-                }
+                if(u.setRoom("")) 
+					u.sendMessageUser("OK");
+				else 
+					u.sendMessageUser("ERROR");
 
                 break;
 
