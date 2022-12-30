@@ -69,6 +69,7 @@ class User {
         this.state = 2;
         this.room = newRoom;
         if(this.room == ""){ 
+			System.out.println("left");
 			this.state = 1;
 			return true;
 		}
@@ -313,12 +314,14 @@ public class ChatServer {
                 break;
 
             case "/leave":
-                if(message.length != 1) {
+                if(message.length != 1 || u.getState()==1) {
                     u.sendMessageUser("ERROR");
                     break;
                     //return false;
                 }
 
+
+				System.out.println("leaving");
                 if(u.setRoom("")) 
 					u.sendMessageUser("OK");
 				else 
