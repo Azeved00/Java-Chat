@@ -7,6 +7,12 @@ import java.util.*;
 
 class User {
     //static methods and attributes
+	// Decoder for incoming text -- assume UTF-8
+    static private final Charset charset = Charset.forName("UTF8");
+    static public final CharsetDecoder decoder = charset.newDecoder(); // public so that ChatServer Can freely decode
+    static private final CharsetEncoder encoder = charset.newEncoder();
+	
+	
     static private Map<SocketChannel,User> users = new HashMap<>();
     public static User getUser(SocketChannel s){
         return users.get(s);
@@ -18,6 +24,7 @@ class User {
         return true;
     }
     
+    static private Map<String,List<User>> rooms = new HashMap<>();
 
     //object methods and attributes
     private String nick;
@@ -42,10 +49,45 @@ class User {
     public void setNick(String n){this.nick = n;}
 
     public String getRoom(){return this.room;}
-    public void setRoom(String n){
+    public boolean setRoom(String newRoom){
+		if(this.room == newRoom) return true;
+		if(this.state == 0) return false;
+		List<User> helper = rooms.get(this.room);
+		
+		//remove from old room if he is already in a room
+        if(this.state == 2){
+			int index2 = 0;
+			for(User i: helper) {
+				if(i == this) {
+					helper.remove(index2);
+					rooms.remove(this.room);
+					rooms.put(this.room,helper);
+				}
+				index2++;
+			}
+			this.sendMessageRoom("LEFT" + this.nick);
+		}
+
+		//update user statistics
         this.state = 2;
-        this.room = n;
-        if(room == "") this.state = 1;
+        this.room = newRoom;
+        if(this.room == ""){ 
+			this.state = 1;
+			return true;
+		}
+		
+		//add to new room
+        helper = rooms.get(this.room);
+        if(helper == null) {
+            helper = new ArrayList<>();
+            helper.add(this);
+        } else {
+            helper.remove(newRoom);
+        }
+        rooms.put(newRoom,helper);
+		
+        this.sendMessageRoom("JOINED" + this.nick);
+		return true;
     }
 
     public int getState(){return this.state;}
@@ -55,6 +97,19 @@ class User {
     public void setState(int n){this.state = n;}
 
     public SocketChannel getSocket() {return this.socket;}
+	
+	public boolean sendMessageUser (String message) throws IOException{
+        this.socket.write(encoder.encode(CharBuffer.wrap(message + '\n')));
+        return true;
+    }
+
+    public boolean sendMessageRoom (String message) {
+        return true;
+    }
+
+	public List<User> getRoomUsers(){
+		return rooms.get(this.room);
+	}
 }
 
 
@@ -62,12 +117,8 @@ public class ChatServer {
     // A pre-allocated buffer for the received data
     static private final ByteBuffer buffer = ByteBuffer.allocate( 16384 );
 
-    // Decoder for incoming text -- assume UTF-8
-    static private final Charset charset = Charset.forName("UTF8");
-    static private final CharsetDecoder decoder = charset.newDecoder();
-    static private final CharsetEncoder encoder = charset.newEncoder();
+
     static private List<String> names = new ArrayList<>();
-    static private Map<String,List<User>> rooms = new HashMap<>();
 
     static public void main( String args[] ) throws Exception {
         // Parse port from command line
@@ -193,7 +244,7 @@ public class ChatServer {
         }
 
         // Decode and print the message to stdout
-        String message = decoder.decode(buffer).toString();
+        String message = User.decoder.decode(buffer).toString();
         String[] splited = message.split(" ");
 
         User u = User.getUser(sc);
@@ -207,7 +258,7 @@ public class ChatServer {
         return false;
     }
 
-    static private boolean processMessage (User u, String[] message){
+    static private boolean processMessage (User u, String[] message) throws IOException{
         if(message[0].charAt(0) == '/') return false;
 
         //process message
@@ -221,7 +272,7 @@ public class ChatServer {
         switch(message[0]) {
             case "/nick":
                 if(message.length != 2) {
-                    sendMessageUser(u, "ERROR");
+                    u.sendMessageUser("ERROR");
                     return false;
                 }
 
@@ -230,7 +281,7 @@ public class ChatServer {
                 int index = -1;
                 for(int i = 0; i < names.size(); i++) {
                     if(message[1].equals(names.get(i))) {
-                        sendMessageUser(u, "ERROR");
+                        u.sendMessageUser("ERROR");
                         return false;
                     }
                     if(u.getNick().equals(names.get(i))) index = i;
@@ -245,89 +296,37 @@ public class ChatServer {
 
                  switch(u.getState()) {
                      case 2:
-                         sendMessageRoom(u, "NEWNICK" + old + u.getNick());
+                         u.sendMessageRoom("NEWNICK" + old + u.getNick());
                      case 0:
                      case 1:
-                         sendMessageUser(u, "OK");
+                         u.sendMessageUser("OK");
                          break;
                  }
                 break;
 
             case "/join":
-
                 if(message.length != 2) {
-                    sendMessageUser(u, "ERROR");
+                    u.sendMessageUser("ERROR");
                     return false;
                 }
-
-                switch(u.getState()) {
-                    case 2:
-                        sendMessageUser(u, "OK");
-                        sendMessageRoom(u, "LEFT" + u.getNick());
-
-                        List<User> helper = rooms.get(u.getRoom());
-                        int index2 = 0;
-                        for(User i: helper) {
-                            if(i == u) {
-                                helper.remove(index2);
-                                rooms.remove(u.getRoom());
-                                rooms.put(u.getRoom(),helper);
-                            }
-                            index2++;
-                        }
-
-                        u.setRoom(message[1]);
-                        helper = rooms.get(u.getRoom());
-                        if(helper == null) {
-                            helper = new ArrayList<>();
-                            helper.add(u);
-                        } else {
-                            rooms.remove(message[1]);
-                        }
-
-                        rooms.put(message[1],helper);
-
-                        sendMessageRoom(u, "JOINED" + u.getNick());
-                        break;
-
-                    case 0:
-                        sendMessageUser(u,"ERROR");
-                        break;
-
-                    case 1:
-                        u.setRoom(message[1]);
-                        helper = rooms.get(u.getRoom());
-                        if(helper == null) {
-                            helper = new ArrayList<>();
-                            helper.add(u);
-                        } else {
-                            rooms.remove(message[1]);
-                        }
-
-                        rooms.put(message[1],helper);
-
-                        sendMessageRoom(u, "JOINED" + u.getNick());
-                        sendMessageUser(u, "OK");
-                        break;
-                }
-
+				u.setRoom(message[1]);
                 break;
 
             case "/leave":
 
                 if(message.length != 1) {
-                    sendMessageUser(u, "ERROR");
+                    u.sendMessageUser("ERROR");
                     return false;
                 }
 
                 switch(u.getState()) {
                     case 0:
                     case 1:
-                        sendMessageUser(u, "ERROR");
+                        u.sendMessageUser("ERROR");
                         return false;
                     case 2:
-                        sendMessageUser(u, "OK");
-                        sendMessageRoom(u, "LEFT" + u.getNick());
+                        u.sendMessageUser("OK");
+                        u.sendMessageRoom("LEFT" + u.getNick());
                         break;
                 }
 
@@ -336,18 +335,18 @@ public class ChatServer {
             case "/bye":
 
                 if(message.length != 1) {
-                    sendMessageUser(u, "ERROR");
+                    u.sendMessageUser("ERROR");
                     return false;
                 }
 
                 switch(u.getState()) {
                     case 0:
                     case 1:
-                        sendMessageUser(u, "OK");
+                        u.sendMessageUser("OK");
                         return false;
 
                     case 2:
-                        sendMessageUser(u, "ERROR");
+                        u.sendMessageUser("ERROR");
                         break;
                 }
 
@@ -360,13 +359,6 @@ public class ChatServer {
         return true;
     }
 
-    static private boolean sendMessageUser (User u, String message) throws IOException{
-        u.getSocket().write(encoder.encode(CharBuffer.wrap(message + '\n')));
-        return true;
-    }
 
-    static private boolean sendMessageRoom (User u, String message) {
-        return true;
-    }
 }
 
