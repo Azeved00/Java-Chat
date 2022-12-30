@@ -259,6 +259,7 @@ public class ChatServer {
         if(message[0].charAt(0) == '/') return false;
 
         //process message
+        u.sendMessageRoom("MESSAGE " + String.join(" ", message) + '\n');
 
         return true;
     }
@@ -335,25 +336,25 @@ public class ChatServer {
 
                 if(message.length != 1) {
                     u.sendMessageUser("ERROR");
-                    break;
-                    //return false;
+                    return false;
                 }
 
                 switch(u.getState()) {
                     case 0:
                     case 1:
-                        u.sendMessageUser("OK");
-						//socket.close();
-                        return true;
+                        u.sendMessageUser("BYE");
+                        return false;
 
                     case 2:
-                        u.sendMessageUser("ERROR");
+                        u.sendMessageUser("BYE");
+                        u.sendMessageRoom("LEFT " + u.getNick());
                         break;
                 }
 
                 break;
 
             case "/priv":
+
                 break;
 
             default:
