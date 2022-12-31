@@ -40,7 +40,7 @@ public class ChatClient extends Thread {
 			case "JOINED":
 				toPrint = splited[1] + " juntou-se ao grupo\n";
 				break;
-			case "ERROR":
+			case "ERROR\n":
 				toPrint = "Houve um erro no comando\n";
 				break;
 			case "NEWNICk":
@@ -52,10 +52,10 @@ public class ChatClient extends Thread {
 			case "LEFT":
 				toPrint = splited[1] + " saiu do chat\n";
 				break;
-			case "BYE":
+			case "BYE\n":
 				toPrint = "Até à proxima :)\n";
 				break;
-			case "OK":
+			case "OK\n":
 				toPrint = "Comando Corrido com sucesso\n";
 				break;
 			default:
@@ -102,13 +102,42 @@ public class ChatClient extends Thread {
         Socket = SocketChannel.open(new InetSocketAddress(server, port));
     }
 
+	//
+	public String prepareMessage(String message){
+	    //add termination chars to string
+        message += "\n\0";
+		
+		//check if the message is a command0
+		//if it is then get the command
+		if(message.charAt(0) != '/') return message;
+		
+		String command ="";	
+		for(int i = 0; i < message.length();i++){
+			if(message.charAt(i) == ' ') break;
+			command += message.charAt(i);
+		}
+		
+		//if it is a command then just send it
+		switch(command){
+			case "/priv":
+			case "/leave":
+			case "/bye":
+			case "/nick":
+			case "/join":
+				return message;
+		}
+		
+		//if it isnt escape the first /
+		message = "/" + message;
+		return message;
+	}
+
     // Method called each time user clicks enter
     // Send message to server using socket
     public void newMessage(String message) throws IOException {
         if(Debug) System.out.println(message);
-
-        //add termination chars to string
-        message = message + "\n\0";
+		
+		message = prepareMessage(message);
 
         //clear the buffer and prepare message for transmition
         outBuffer.clear();
