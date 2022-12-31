@@ -22,7 +22,14 @@ class User {
         users.put(s,u);
         return true;
     }
-    
+
+    public static User getUserByName(String name) {
+        for(Map.Entry<SocketChannel,User> entry : users.entrySet()) {
+            if(entry.getValue().getNick().equals(name)) return entry.getValue();
+        }
+
+        return null;
+    }
     static private Map<String,List<User>> rooms = new HashMap<>();
 
     //object methods and attributes
@@ -292,6 +299,7 @@ public class ChatServer {
     }
 
     static private boolean processMessage (User u, String[] message) throws IOException{
+        if(message[0].length() < 1) return false;
         if(message[0].charAt(0) == '/') return false;
 
 		String msg = String.join(" ", message);
@@ -393,12 +401,31 @@ public class ChatServer {
                 break;
 
             case "/priv":
+                if(message.length < 3) {
+                    u.sendMessageUser("ERROR");
+                    break;
+                }
+
+                User dest = User.getUserByName(message[1]);
+                System.out.println(":" + message[1] + ":");
+                System.out.println(":" + dest.getNick() + ":");
+
+                if(dest == null) u.sendMessageUser("ERROR");
+                else {
+                    List<String> m = Arrays.asList(message);
+                    String fin = String.join(" ",m.subList(2,m.size()));
+
+                    dest.sendMessageUser("PRIVATE " + u.getNick() + " " + fin);
+                    u.sendMessageUser("OK");
+                }
 
                 break;
 
             default:
-				System.out.println("Unknown Command");
-                u.sendMessageUser("ERROR");
+                String msg = String.join(" ", message);
+                msg = msg.substring(1,message.length);
+                String[] splited = msg.split(" ");
+                processMessage(u, splited);
         }
 
         return true;
