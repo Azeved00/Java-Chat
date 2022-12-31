@@ -31,7 +31,7 @@ public class ChatClient extends Thread {
 
     // Add Message to Chat Area
     public void printMessage(final String message) {
-		String splited =  message.split(" ",3);
+		String[] splited =  message.split(" ",3);
 		String toPrint;
 		switch(splited[0]){
 			case "MESSAGE":
