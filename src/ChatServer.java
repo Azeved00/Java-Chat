@@ -119,6 +119,7 @@ class User {
 			}
 		}
 		catch(Exception e){
+			System.out.println(e.getMessage());
 			return false;
 		}
 		
@@ -280,9 +281,17 @@ public class ChatServer {
         String[] splited = message.split(" ");
 
 		if(splited[0] == "") return true;
-        if(processCommand(u,splited)) return true;
-        if(processMessage(u,splited)) return true;
-
+		
+			
+		if(splited[0].charAt(0) == '/'){
+			if(processCommand(u,splited)) 
+				return true;
+		}
+		else{
+			processMessage(u,splited);
+			return true;
+		}
+			
 								
 		//removing name of user that was closed
 		// take him from room and user maps
@@ -300,7 +309,6 @@ public class ChatServer {
 
     static private boolean processMessage (User u, String[] message) throws IOException{
         if(message[0].length() < 1) return false;
-        if(message[0].charAt(0) == '/') return false;
 
 		String msg = String.join(" ", message);
 		System.out.println("New message from " + u.getNick() +" to " + u.getRoom()+ " -> " + msg);
@@ -311,8 +319,6 @@ public class ChatServer {
     }
 
     static private boolean processCommand (User u, String[] message) throws IOException{
-        if((message[0].charAt(0) != '/')) return false;
-		
 		System.out.println("Nick: " + u.getNick() + " Group: " + u.getRoom() + " State:  " + u.getState()+ " ran command: " + message[0]);
         switch(message[0]) {
             case "/nick":
@@ -423,9 +429,9 @@ public class ChatServer {
 
             default:
                 String msg = String.join(" ", message);
-                msg = msg.substring(1,message.length);
-                String[] splited = msg.split(" ");
-                processMessage(u, splited);
+                msg = msg.substring(1,msg.length());
+				System.out.println("Unknown command " + msg);
+                processMessage(u, msg.split(" "));
         }
 
         return true;
