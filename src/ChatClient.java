@@ -41,16 +41,16 @@ public class ChatClient extends Thread {
 		String toPrint;
 		switch(splited[0]){
 			case "MESSAGE":
-				toPrint = splited[1] + ": " +splited[2] + "\n";
+				toPrint = splited[1] + ": " + splited[2] + "\n";
 				break;
-			case "JOINED":
+			case "NEWNICK":
+				toPrint = splited[1] + " mudou de nick para " + splited[2] + "\n";
+				break;
+			/*case "JOINED":
 				toPrint = splited[1] + " juntou-se ao grupo\n";
 				break;
 			case "ERROR":
 				toPrint = "Houve um erro no comando\n";
-				break;
-			case "NEWNICK":
-				toPrint = splited[1] + " mudou de nick para " + splited[2] + "\n";
 				break;
 			case "PRIVATE":
 				toPrint = "Mensagem privada de " + splited[1] + ": " +splited[2] + "\n";
@@ -63,7 +63,7 @@ public class ChatClient extends Thread {
 				break;
 			case "OK":
 				toPrint = "Comando Corrido com sucesso\n";
-				break;
+				break;*/
 			default:
 				toPrint = message;
 		}
