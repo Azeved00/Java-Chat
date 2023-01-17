@@ -1,0 +1,3 @@
+/nick luna
+/join ola
+hey!

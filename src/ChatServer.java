@@ -59,7 +59,7 @@ class User {
 		if(this.room == newRoom) return true;
 		if(this.state == 0) return false;
 		List<User> helper = rooms.get(this.room);
-		
+
 		//remove from old room if he is already in a room
         if(this.state == 2){
 			for(int i = 0; i < helper.size(); i++) {
@@ -95,7 +95,9 @@ class User {
 		return true;
     }
 
-    public int getState(){return this.state;}
+    public int getState() {
+        return this.state;
+    }
     public String getBuffer(){return this.buffer;}
     public void setBuffer(String n){this.buffer = n;}
     public void setState(int n){this.state = n;}
@@ -252,6 +254,7 @@ public class ChatServer {
 
     // Just read the message from the socket and send it to stdout
     static private boolean processInput( SocketChannel sc ) throws Exception {
+        int r = -1;
         // Read the message to the buffer
         buffer.clear();
         sc.read( buffer );
@@ -276,22 +279,28 @@ public class ChatServer {
 
         // Decode and print the message to stdout
         String message = User.decoder.decode(buffer).toString();
-		message= message.substring(0,message.length()-1);
-		message = message.strip();
-        String[] splited = message.split(" ");
 
-		if(splited[0] == "") return true;
-		
-			
-		if(splited[0].charAt(0) == '/'){
-			if(processCommand(u,splited)) 
-				return true;
-		}
-		else{
-			processMessage(u,splited);
-			return true;
-		}
-			
+		message = message.substring(0,message.length()-1);
+		message = message.strip();
+
+        String[] splited2 = message.split("\n");
+
+        for(String message1: splited2) {
+            System.out.println(message1);
+            String[] splited = message1.split(" ");
+
+            if(splited[0] == "") r = 0;
+
+            if((splited[0].charAt(0) == '/') && (splited[0].charAt(1) != '/')){
+                if(processCommand(u,splited))
+                    r = 0;
+            } else {
+                processMessage(u,splited);
+                r = 0;
+            }
+        }
+
+        if(r == 0) return true;
 								
 		//removing name of user that was closed
 		// take him from room and user maps
@@ -308,8 +317,12 @@ public class ChatServer {
     }
 
     static private boolean processMessage (User u, String[] message) throws IOException{
-        if(message[0].length() < 1) return false;
+        if((message[0].length() < 1) || (u.getState() != 2)) {
+            u.sendMessageUser("ERROR");
+            return false;
+        }
 
+        if(message[0].charAt(0) == '/') message[0] = message[0].substring(1);
 		String msg = String.join(" ", message);
 		System.out.println("New message from " + u.getNick() +" to " + u.getRoom()+ " -> " + msg);
         //process message
@@ -373,7 +386,9 @@ public class ChatServer {
                 break;
 
             case "/leave":
-                if(message.length != 1 || u.getState()==1) {
+                //System.out.println("antes do getState");
+                if((message.length != 1) || (u.getState()!=2)) {
+                    //System.out.println("depois do getState");
                     u.sendMessageUser("ERROR");
                     break;
                     //return false;
@@ -413,6 +428,11 @@ public class ChatServer {
                 }
 
                 User dest = User.getUserByName(message[1]);
+                if(dest == null) {
+                    u.sendMessageUser("ERROR");
+                    break;
+                }
+
                 System.out.println(":" + message[1] + ":");
                 System.out.println(":" + dest.getNick() + ":");
 

@@ -111,18 +111,21 @@ public class ChatClient extends Thread {
 	//
 	public String prepareMessage(String message){
 	    //add termination chars to string
-        message += "\n\0";
+        message += " \n\0";
 		
 		//check if the message is a command0
 		//if it is then get the command
 		if(message.charAt(0) != '/') return message;
-		
-		String command ="";	
+        String command ="";
+
+        //System.out.println("<"+command+">1");
+
 		for(int i = 0; i < message.length();i++){
 			if(message.charAt(i) == ' ') break;
 			command += message.charAt(i);
 		}
-		
+
+        //System.out.println("<"+command+">");
 		//if it is a command then just send it
 		switch(command){
 			case "/priv":
