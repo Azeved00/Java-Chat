@@ -46,14 +46,14 @@ public class ChatClient extends Thread {
 			case "NEWNICK":
 				toPrint = splited[1] + " mudou de nick para " + splited[2] + "\n";
 				break;
+            case "PRIVATE":
+                toPrint = "Mensagem privada de " + splited[1] + ": " +splited[2] + "\n";
+                break;
 			/*case "JOINED":
 				toPrint = splited[1] + " juntou-se ao grupo\n";
 				break;
 			case "ERROR":
 				toPrint = "Houve um erro no comando\n";
-				break;
-			case "PRIVATE":
-				toPrint = "Mensagem privada de " + splited[1] + ": " +splited[2] + "\n";
 				break;
 			case "LEFT":
 				toPrint = splited[1] + " saiu do chat\n";
